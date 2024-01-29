@@ -88,7 +88,6 @@ def convert2rgb(imageY, imageCr, imageCb, subimg):
   #return np.clip(imageRGB, 0, 1)
   return imageRGB
 
-
 def blockDCT(block):
   block = block - 255.0
   cv.dct(block, block, 0)
@@ -98,3 +97,12 @@ def iBlockDCT(block):
   cv.dct(block, block, 1)
   block = block + 255.0
   return block
+
+
+def quantizeJPEG(dctBlock, qTable, qScale):
+  q = qTable * qScale
+  return (dctBlock / q).round()
+
+def dequantizeJPEG(qBlock, qTable, qScale):
+  q = qTable * qScale
+  return qBlock * q
