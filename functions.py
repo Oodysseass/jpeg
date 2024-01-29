@@ -1,4 +1,5 @@
 import numpy as np
+import cv2 as cv
 
 
 def convert2ycrcb(imageRGB, subimg):
@@ -84,4 +85,16 @@ def convert2rgb(imageY, imageCr, imageCb, subimg):
   imageRGB = np.array([red, green, blue])
   imageRGB = np.transpose(imageRGB, (1, 2, 0))
 
-  return np.clip(imageRGB, 0, 1)
+  #return np.clip(imageRGB, 0, 1)
+  return imageRGB
+
+
+def blockDCT(block):
+  block = block - 255.0
+  cv.dct(block, block, 0)
+  return block
+
+def iBlockDCT(block):
+  cv.dct(block, block, 1)
+  block = block + 255.0
+  return block
