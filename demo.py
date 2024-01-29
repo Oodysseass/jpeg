@@ -65,8 +65,54 @@ for i in range(imageCr.shape[0] // 8):
     blocks_cr[i][j] = fn.quantizeJPEG(blocks_cr[i][j], c_table, 0.5)
     blocks_cb[i][j] = fn.quantizeJPEG(blocks_cb[i][j], c_table, 0.5)
 
+# encode
+symbols_y = {}
+symbols_cr = {}
+symbols_cb = {}
+symbols_y[0] = {}
+symbols_y[0][0] = fn.runLength(symbols_y[0][0], 0)
+for i in range(imageY.shape[0] // 8):
+  symbols_y[i] = {}
+  for j in range(imageY.shape[1] // 8):
+    if i == 0 and j == 0:
+      continue
+    prev = [i, j - 1] if j > 0 else [i - 1, imageY.shape[1] // 8 - 1]
+    blocks_y[i][j] = fn.runLength(blocks_y[i][j], blocks_y[prev[0]][prev[1]][0][1])
 
-## inverse jpeg
+blocks_cr[0][0] = fn.runLength(blocks_cr[0][0], 0)
+blocks_cb[0][0] = fn.runLength(blocks_cb[0][0], 0)
+for i in range(imageCr.shape[0] // 8):
+  for j in range(imageCr.shape[1] // 8):
+    if i == 0 and j == 0:
+      continue
+    prev = [i, j - 1] if j > 0 else [i - 1, imageCr.shape[1] // 8 - 1]
+    blocks_cr[i][j] = fn.runLength(blocks_cr[i][j], blocks_cr[prev[0]][prev[1]][0][1])
+    blocks_cb[i][j] = fn.runLength(blocks_cb[i][j], blocks_cb[prev[0]][prev[1]][0][1])
+
+
+## inverse
+# decode
+blocks_y[0][0] = fn.irunLength(blocks_y[0][0], 0)
+for i in range(imageY.shape[0] // 8):
+  for j in range(imageY.shape[1] // 8):
+    if i == 0 and j == 0:
+      continue
+    prev = [i, j - 1] if j > 0 else [i - 1, imageY.shape[1] // 8 - 1]
+    blocks_y[i][j] = fn.irunLength(blocks_y[i][j], blocks_y[prev[0]][prev[1]][0, 0])
+print(blocks_y[0][0])
+print(blocks_y[0][1])
+print(blocks_y[0][2])
+
+blocks_cr[0][0] = fn.irunLength(blocks_cr[0][0], 0)
+blocks_cb[0][0] = fn.irunLength(blocks_cb[0][0], 0)
+for i in range(imageCr.shape[0] // 8):
+  for j in range(imageCr.shape[1] // 8):
+    if i == 0 and j == 0:
+      continue
+    prev = [i, j - 1] if j > 0 else [i - 1, imageCr.shape[1] // 8 - 1]
+    blocks_cr[i][j] = fn.irunLength(blocks_cr[i][j], blocks_cr[prev[0]][prev[1]][0][0])
+    blocks_cb[i][j] = fn.irunLength(blocks_cb[i][j], blocks_cb[prev[0]][prev[1]][0][0])
+
 # dequantize
 for i in range(imageY.shape[0] // 8):
   for j in range(imageY.shape[1] // 8):
@@ -93,7 +139,8 @@ for i in range(imageCr.shape[0] // 8):
 # convert to rgb
 imageRGB = fn.convert2rgb(image_Y, image_Cr, image_Cb, [4, 2, 0])
 
-# display
+
+## display
 imageRGB = imageRGB / 255.0
 image = image / 255.0
 
