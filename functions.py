@@ -45,16 +45,27 @@ def convert2rgb(imageY, imageCr, imageCb, subimg):
     imageCr_up[:, 0::2] = imageCr
     imageCb_up[:, 0::2] = imageCb
 
-    imageCr_up[:, 1::2] = imageCr_up[:, 0::2]
-    imageCb_up[:, 1::2] = imageCb_up[:, 0::2]
+    imageCr_up[:, 1:-1:2] = (imageCr_up[:, 0:-2:2] + imageCr_up[:, 2::2]) / 2
+    imageCr_up[:, -1] = imageCr_up[:, -2]
+
+    imageCb_up[:, 1:-1:2] = (imageCb_up[:, 0:-2:2] + imageCb_up[:, 2::2]) / 2
+    imageCb_up[:, -1] = imageCb_up[:, -2]
   elif subimg[2] == 0:
     imageCr_up[0::2, 0::2] = imageCr
     imageCb_up[0::2, 0::2] = imageCb
 
-    imageCr_up[0::2, 1::2] = imageCr_up[0::2, 0::2]
-    imageCr_up[1::2, :] = imageCr_up[0::2, :]
-    imageCb_up[0::2, 1::2] = imageCb_up[0::2, 0::2]
-    imageCb_up[1::2, :] = imageCb_up[0::2, :]
+    imageCr_up[0::2, 1:-1:2] = (imageCr_up[0::2, 0:-2:2] + imageCr_up[0::2, 2::2]) / 2
+    imageCr_up[0::2, -1] = imageCr_up[0::2, -2]
+    imageCr_up[1:-1:2, :] = (imageCr_up[0:-2:2, :] + imageCr_up[2::2, :]) / 2
+    imageCr_up[-1, :] = imageCr_up[-2, :]
+
+    imageCb_up[0::2, 1:-1:2] = (imageCb_up[0::2, 0:-2:2] + imageCb_up[0::2, 2::2]) / 2
+    imageCb_up[0::2, -1] = imageCb_up[0::2, -2]
+    imageCb_up[1:-1:2, :] = (imageCb_up[0:-2:2, :] + imageCb_up[2::2, :]) / 2
+    imageCb_up[-1, :] = imageCb_up[-2, :]
+  else:
+    imageCr_up = imageCr
+    imageCb_up = imageCb
 
   # reverse transform
   red = T[0, 0] * imageY  \
