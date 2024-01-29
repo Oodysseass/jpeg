@@ -1,6 +1,8 @@
 import numpy as np
 import cv2 as cv
 
+from helpers import get_category_ac, get_category_dc, get_huffman
+
 
 def convert2ycrcb(imageRGB, subimg):
   # transformation matrix 2ycrcb
@@ -218,3 +220,12 @@ def irunLength(runSymbols, DCpred):
     j += j_step
 
   return qBlock
+
+
+def huffEnc(runSymbols, blk_type):
+  # get dc category
+  category = get_category_dc(runSymbols[0][1])
+  # get huffman code
+  code = get_huffman('dc', 'lum')
+  for i in range(1, len(runSymbols)):
+    pass
