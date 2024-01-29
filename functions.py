@@ -31,7 +31,6 @@ def convert2ycrcb(imageRGB, subimg):
 
   return imageY, imageCr, imageCb
 
-
 def convert2rgb(imageY, imageCr, imageCb, subimg):
   # inverse matrix 2RGB
   T = np.array([[0.299, 0.587, 0.114],
@@ -88,6 +87,8 @@ def convert2rgb(imageY, imageCr, imageCb, subimg):
   #return np.clip(imageRGB, 0, 1)
   return imageRGB
 
+
+# shift dct and inverse
 def blockDCT(block):
   block = block - 255.0
   cv.dct(block, block, 0)
@@ -99,6 +100,7 @@ def iBlockDCT(block):
   return block
 
 
+# quantize blocks
 def quantizeJPEG(dctBlock, qTable, qScale):
   q = qTable * qScale
   return (dctBlock / q).round()
@@ -106,3 +108,113 @@ def quantizeJPEG(dctBlock, qTable, qScale):
 def dequantizeJPEG(qBlock, qTable, qScale):
   q = qTable * qScale
   return qBlock * q
+
+
+# encode run symbols
+def runLength(qBlock, DCpred):
+  # init with dc
+  runSymbols = []
+  runSymbols.append([0, qBlock[0][0] - DCpred])
+
+  # start from (0, 1)
+  i, j = 0, 1
+  i_step = 1
+  j_step = -1
+  zero_counter = 0
+  direction = True
+  while i < 8 and j < 8:
+    # raise counter or append based on current value
+    if qBlock[i][j] == 0:
+      zero_counter += 1
+    else:
+      runSymbols.append([zero_counter, qBlock[i][j]])
+      zero_counter = 0
+
+    # if a diagonal ended fix stepping
+    if direction:
+      if i == 0 and i_step == -1:
+        i_step = 1
+        j_step = -1
+        j += 1
+        continue
+      elif j == 0 and j_step == -1:
+        i_step = -1
+        j_step = 1
+        if i < 7:
+          i += 1
+        else:
+          j += 1
+          direction = False
+        continue
+    else:
+      if i == 7 and i_step == 1:
+        i_step = -1
+        j_step = 1
+        j += 1
+        continue
+      elif j == 7 and j_step == 1:
+        i_step = 1
+        j_step = -1
+        i += 1
+        continue
+
+    i += i_step
+    j += j_step
+
+  if zero_counter != 0:
+    runSymbols.append([zero_counter - 1, 0])
+
+  return runSymbols
+
+# decode run symbols
+def irunLength(runSymbols, DCpred):
+  qBlock = np.zeros((8, 8))
+  qBlock[0, 0] = runSymbols[0][1] + DCpred
+
+  # start from (0, 1)
+  i, j = 0, 1
+  i_step = 1
+  j_step = -1
+  symbol_counter = 1
+  direction = True
+  while i < 8 and j < 8:
+    # add zero or dct value based on current run symbol
+    if runSymbols[symbol_counter][0] == 0:
+      qBlock[i][j] = runSymbols[symbol_counter][1]
+      symbol_counter += 1
+    else:
+      runSymbols[symbol_counter][0] -= 1
+      qBlock[i][j] = 0
+
+    # if a diagonal ended fix stepping
+    if direction:
+      if i == 0 and i_step == -1:
+        i_step = 1
+        j_step = -1
+        j += 1
+        continue
+      elif j == 0 and j_step == -1:
+        i_step = -1
+        j_step = 1
+        if i < 7:
+          i += 1
+        else:
+          j += 1
+          direction = False
+        continue
+    else:
+      if i == 7 and i_step == 1:
+        i_step = -1
+        j_step = 1
+        j += 1
+        continue
+      elif j == 7 and j_step == 1:
+        i_step = 1
+        j_step = -1
+        i += 1
+        continue
+
+    i += i_step
+    j += j_step
+
+  return qBlock
