@@ -471,3 +471,20 @@ def get_run_ac_chrom(code):
     if value == code:
       return key
   return None
+
+def twos_complement(num):
+    if num >= 0:
+        return format(num, f'08b')
+    else:
+        return format(2 ** 8 + num, f'08b')
+
+def inverse_twos_complement(bin_str):
+  if bin_str[0] == '0':
+    inverted = ''
+    for i in range(len(bin_str)):
+      if bin_str[i] == '0':
+        inverted += '1'
+      else:
+        inverted += '0'
+    return -(int(inverted, 2) + 1)
+  return int(bin_str, 2)
