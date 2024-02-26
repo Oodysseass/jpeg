@@ -1,7 +1,7 @@
 import numpy as np
 import cv2 as cv
 
-from helpers import get_category_ac, get_category_dc, get_huffman
+from helpers import get_category_ac, get_category_dc, get_huffman, get_symbol
 
 
 def convert2ycrcb(imageRGB, subimg):
@@ -92,13 +92,13 @@ def convert2rgb(imageY, imageCr, imageCb, subimg):
 
 # shift dct and inverse
 def blockDCT(block):
-  block = block - 255.0
+  block = block - 128
   cv.dct(block, block, 0)
   return block
 
 def iBlockDCT(block):
   cv.dct(block, block, 1)
-  block = block + 255.0
+  block = block + 128
   return block
 
 
@@ -222,10 +222,58 @@ def irunLength(runSymbols, DCpred):
   return qBlock
 
 
+# huffman encoding
 def huffEnc(runSymbols, blk_type):
+  ## preprocess runSymbols
+  # cut symbols with too many preceding zeros
+  length = len(runSymbols)
+  i = 0
+  while i < length:
+    if runSymbols[i][0] > 15 and runSymbols[i][1] != 0:
+      runSymbols.insert(i, [15, 0])
+      runSymbols[i + 1][0] -= 15
+      length = len(runSymbols)
+    i += 1
+
+  # if last symbol is just zeros append special symbol
+  if runSymbols[-1][1] == 0:
+    runSymbols[-1] = [0, 0]
+
+  runSymbols = np.array(runSymbols).astype(np.int8)
+
+  ## array with symbols
+  huff_stream = np.empty(len(runSymbols), dtype='object')
+
   # get dc category
   category = get_category_dc(runSymbols[0][1])
-  # get huffman code
-  code = get_huffman('dc', 'lum')
+  # get SSSS of huffman code
+  huff_stream[0] = int(get_huffman('dc', blk_type, category), 2)
+  # append LSB of value
+  if category != 0:
+    mask = (1 << (category - 1)) - 1
+    if runSymbols[0][1] > 0:
+      lsb = runSymbols[0][1] & mask
+      sign = 0 << (category - 1)
+    else:
+      lsb = abs((runSymbols[0][1] - 1)) & mask
+      sign = 1 << (category - 1)
+    lsb = sign | lsb
+    huff_stream[0] = (huff_stream[0] << category) | lsb
+
   for i in range(1, len(runSymbols)):
-    pass
+    prec_zer = runSymbols[i][0]
+    category = get_category_ac(runSymbols[i][1])
+    huff_stream[i] = int(get_huffman('ac', blk_type, (prec_zer, category)), 2)
+
+    if category != 0:
+      mask = (1 << (category - 1)) - 1
+      if runSymbols[i][1] > 0:
+        lsb = runSymbols[i][1] & mask
+        sign = 0 << (category - 1)
+      else:
+        lsb = (runSymbols[i][1] - 1) & mask
+        sign = 1 << (category - 1)
+      lsb = sign | lsb
+      huff_stream[i] = (huff_stream[i] << category) | lsb
+
+  return huff_stream
