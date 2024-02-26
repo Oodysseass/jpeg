@@ -1,7 +1,8 @@
 import numpy as np
 import cv2 as cv
 
-from helpers import get_category_ac, get_category_dc, get_huffman, get_symbol
+from helpers import get_category_ac, get_category_dc, get_huffman, get_symbol,\
+                    twos_complement, inverse_twos_complement
 
 
 def convert2ycrcb(imageRGB, subimg):
@@ -247,34 +248,33 @@ def huffEnc(runSymbols, blk_type):
   # get dc category
   category = get_category_dc(runSymbols[0][1])
   # get SSSS of huffman code
-  huff_stream[0] = int(get_huffman('dc', blk_type, category), 2)
+  huff_stream[0] = get_huffman('dc', blk_type, category)
   # append LSB of value
   if category != 0:
-    mask = (1 << (category - 1)) - 1
     if runSymbols[0][1] > 0:
-      lsb = runSymbols[0][1] & mask
-      sign = 0 << (category - 1)
+      bits = bin(runSymbols[0][1])[2:]
+      lsb = bits[-category:]
     else:
-      lsb = abs((runSymbols[0][1] - 1)) & mask
-      sign = 1 << (category - 1)
-    lsb = sign | lsb
-    huff_stream[0] = (huff_stream[0] << category) | lsb
+      val = runSymbols[0][1] - 1
+      comp = twos_complement(val)
+      lsb = comp[-category:]
+    huff_stream[0] = huff_stream[0] + lsb
 
+  # do the same for acs
   for i in range(1, len(runSymbols)):
     prec_zer = runSymbols[i][0]
     category = get_category_ac(runSymbols[i][1])
-    huff_stream[i] = int(get_huffman('ac', blk_type, (prec_zer, category)), 2)
+    huff_stream[i] = get_huffman('ac', blk_type, (prec_zer, category))
 
     if category != 0:
-      mask = (1 << (category - 1)) - 1
       if runSymbols[i][1] > 0:
-        lsb = runSymbols[i][1] & mask
-        sign = 0 << (category - 1)
+        bits = bin(runSymbols[i][1])[2:]
+        lsb = bits[-category:]
       else:
-        lsb = (runSymbols[i][1] - 1) & mask
-        sign = 1 << (category - 1)
-      lsb = sign | lsb
-      huff_stream[i] = (huff_stream[i] << category) | lsb
+        val = runSymbols[i][1] - 1
+        comp = twos_complement(val)
+        lsb = comp[-category:]
+      huff_stream[i] = huff_stream[i] + lsb
 
   return huff_stream
 
