@@ -97,29 +97,39 @@ for i in range(M_c):
     symbols_cb[i][j] = fn.runLength(blocks_cb[i][j], dc_pred)
 
 # huffman encoding
+# encode to run symbols
+huff_y = {i: {} for i in range(M_y)}
+huff_cr = {i: {} for i in range(M_c)}
+huff_cb = {i: {} for i in range(M_c)}
 for i in range(M_y):
   for j in range(N_y):
-    symbols_y[i][j] = fn.huffEnc(symbols_y[i][j], 'lum')
+    huff_y[i][j] = fn.huffEnc(symbols_y[i][j], 'lum')
 
 for i in range(M_c):
   for j in range(N_c):
-    symbols_cr[i][j] = fn.huffEnc(symbols_cr[i][j], 'chrom')
-    symbols_cb[i][j] = fn.huffEnc(symbols_cb[i][j], 'chrom')
+    huff_cr[i][j] = fn.huffEnc(symbols_cr[i][j], 'chrom')
+    huff_cb[i][j] = fn.huffEnc(symbols_cb[i][j], 'chrom')
 
 
 ## inverse
 # decode huffman
+sym_y = {i: {} for i in range(M_y)}
+sym_cr = {i: {} for i in range(M_c)}
+sym_cb = {i: {} for i in range(M_c)}
 for i in range(M_y):
   for j in range(N_y):
-    symbols_y[i][j] = fn.huffDec(symbols_y[i][j], 'lum')
-    exit(1)
+    sym_y[i][j] = fn.huffDec(huff_y[i][j], 'lum')
 
 for i in range(M_c):
   for j in range(N_c):
-    symbols_cr[i][j] = fn.huffDec(symbols_cr[i][j], 'chrom')
-    symbols_cb[i][j] = fn.huffDec(symbols_cb[i][j], 'chrom')
+    sym_cr[i][j] = fn.huffDec(huff_cr[i][j], 'chrom')
+    sym_cb[i][j] = fn.huffDec(huff_cb[i][j], 'chrom')
 
 # decode run symbols
+blocks_y = {i: {} for i in range(M_y)}
+blocks_cr = {i: {} for i in range(M_c)}
+blocks_cb = {i: {} for i in range(M_c)}
+
 blocks_y[0][0] = fn.irunLength(symbols_y[0][0], 0)
 for i in range(M_y):
   for j in range(N_y):
