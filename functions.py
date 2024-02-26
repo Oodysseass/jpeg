@@ -277,3 +277,34 @@ def huffEnc(runSymbols, blk_type):
       huff_stream[i] = (huff_stream[i] << category) | lsb
 
   return huff_stream
+
+# huffman decoding
+def huffDec(huffStream, blk_type):
+  code = huffStream[0]
+  print(bin(code))
+  bin_code = bin(code)[2:]
+  # find category
+  i = 0
+  symbol = bin_code[:2]
+  category = get_symbol('dc', blk_type, symbol)
+  while not category:
+    i += 1
+    symbol = bin_code[:2+i]
+    category = get_symbol('dc', blk_type, symbol)
+
+  sign = bin_code[-category]
+  bin_value = bin_code[-(category - 1):]
+  print(sign)
+  print(bin_value)
+  if sign == '0':
+    value = int(bin_value, 2)
+  else:
+    value = -(int(bin_value, 2) + 1)
+
+  print(value)
+
+  return
+#  length = len(huffStream)
+#  for i in range(length):
+#
+  #return
