@@ -180,7 +180,7 @@ def irunLength(runSymbols, DCpred):
   j_step = -1
   symbol_counter = 1
   direction = True
-  while i < 8 and j < 8:
+  while i < 8 and j < 8 and symbol_counter < len(runSymbols):
     # add zero or dct value based on current run symbol
     if runSymbols[symbol_counter][0] == 0:
       qBlock[i][j] = runSymbols[symbol_counter][1]
@@ -280,31 +280,51 @@ def huffEnc(runSymbols, blk_type):
 
 # huffman decoding
 def huffDec(huffStream, blk_type):
-  code = huffStream[0]
-  print(bin(code))
-  bin_code = bin(code)[2:]
+  run_symbols = []
+
   # find category
+  code = huffStream[0]
   i = 0
-  symbol = bin_code[:2]
+  symbol = code[:2]
   category = get_symbol('dc', blk_type, symbol)
-  while not category:
+  while category is None:
     i += 1
-    symbol = bin_code[:2+i]
+    symbol = code[:2+i]
     category = get_symbol('dc', blk_type, symbol)
 
-  sign = bin_code[-category]
-  bin_value = bin_code[-(category - 1):]
-  print(sign)
-  print(bin_value)
-  if sign == '0':
-    value = int(bin_value, 2)
-  else:
-    value = -(int(bin_value, 2) + 1)
+  # get value
+  bin_value = code[-category:]
+  value = 0
+  if category != 0:
+    if bin_value[0] == '1':
+      value = int(bin_value, 2)
+    else:
+      value = inverse_twos_complement(bin_value) + 1
 
-  print(value)
+  run_symbols.append([0, value])
 
-  return
-#  length = len(huffStream)
-#  for i in range(length):
-#
-  #return
+  # ac
+  for i in range(1, len(huffStream)):
+    code = huffStream[i]
+    i = 0
+    symbol = code[:2]
+    category = get_symbol('ac', blk_type, symbol)
+    while category is None:
+      i += 1
+      symbol = code[:2+i]
+      category = get_symbol('ac', blk_type, symbol)
+
+    prec_zeros, num_bits = category[0], category[1]
+
+    # get value
+    bin_value = code[-num_bits:]
+    value = 0
+    if num_bits != 0:
+      if bin_value[0] == '1':
+        value = int(bin_value, 2)
+      else:
+        value = inverse_twos_complement(bin_value) + 1
+
+    run_symbols.append([prec_zeros, value])
+
+  return run_symbols
