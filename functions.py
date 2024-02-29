@@ -3,6 +3,9 @@ import cv2 as cv
 
 from helpers import twos_complement, inverse_twos_complement
 
+TYPE = np.int64
+NUM_BITS = 64
+
 
 def convert2ycrcb(imageRGB, subimg):
   # transformation matrix 2ycrcb
@@ -239,7 +242,7 @@ def huffEnc(runSymbols, blk_type, header):
   if runSymbols[-1][1] == 0:
     runSymbols[-1] = [0, 0]
 
-  runSymbols = np.array(runSymbols).astype(np.int8)
+  runSymbols = np.array(runSymbols).astype(TYPE)
 
   ## array with symbols
   huff_stream = np.empty(len(runSymbols), dtype='object')
@@ -255,7 +258,7 @@ def huffEnc(runSymbols, blk_type, header):
       lsb = bits[-category:]
     else:
       val = runSymbols[0][1] - 1
-      comp = twos_complement(val)
+      comp = twos_complement(val, NUM_BITS)
       lsb = comp[-category:]
     huff_stream[0] = huff_stream[0] + lsb
 
@@ -271,7 +274,7 @@ def huffEnc(runSymbols, blk_type, header):
         lsb = bits[-category:]
       else:
         val = runSymbols[i][1] - 1
-        comp = twos_complement(val)
+        comp = twos_complement(val, NUM_BITS)
         lsb = comp[-category:]
       huff_stream[i] = huff_stream[i] + lsb
 

@@ -379,8 +379,9 @@ default_c = np.array([[17, 18, 24, 47, 99, 99, 99, 99],
                       [99, 99, 99, 99, 99, 99, 99, 99],
                       [99, 99, 99, 99, 99, 99, 99, 99]])
 
-def twos_complement(num):
-  return format(2 ** 8 + num, f'08b')
+def twos_complement(num, num_bits):
+  shift = 2 ** num_bits + num
+  return bin(shift)
 
 def inverse_twos_complement(bin_str):
   inverted = ''
