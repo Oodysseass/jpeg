@@ -1,8 +1,7 @@
 import numpy as np
 import cv2 as cv
 
-from helpers import get_category_ac, get_category_dc, get_huffman, get_symbol,\
-                    twos_complement, inverse_twos_complement
+from helpers import twos_complement, inverse_twos_complement
 
 
 def convert2ycrcb(imageRGB, subimg):
@@ -224,7 +223,7 @@ def irunLength(runSymbols, DCpred):
 
 
 # huffman encoding
-def huffEnc(runSymbols, blk_type):
+def huffEnc(runSymbols, blk_type, header):
   ## preprocess runSymbols
   # cut symbols with too many preceding zeros
   length = len(runSymbols)
@@ -246,9 +245,9 @@ def huffEnc(runSymbols, blk_type):
   huff_stream = np.empty(len(runSymbols), dtype='object')
 
   # get dc category
-  category = get_category_dc(runSymbols[0][1])
+  category = header.get_category_dc(runSymbols[0][1])
   # get SSSS of huffman code
-  huff_stream[0] = get_huffman('dc', blk_type, category)
+  huff_stream[0] = header.get_huffman('dc', blk_type, category)
   # append LSB of value
   if category != 0:
     if runSymbols[0][1] > 0:
@@ -263,8 +262,8 @@ def huffEnc(runSymbols, blk_type):
   # do the same for acs
   for i in range(1, len(runSymbols)):
     prec_zer = runSymbols[i][0]
-    category = get_category_ac(runSymbols[i][1])
-    huff_stream[i] = get_huffman('ac', blk_type, (prec_zer, category))
+    category = header.get_category_ac(runSymbols[i][1])
+    huff_stream[i] = header.get_huffman('ac', blk_type, (prec_zer, category))
 
     if category != 0:
       if runSymbols[i][1] > 0:
@@ -279,18 +278,18 @@ def huffEnc(runSymbols, blk_type):
   return huff_stream
 
 # huffman decoding
-def huffDec(huffStream, blk_type):
+def huffDec(huffStream, blk_type, header):
   run_symbols = []
 
   # find category
   code = huffStream[0]
   i = 0
   symbol = code[:2]
-  category = get_symbol('dc', blk_type, symbol)
+  category = header.get_symbol('dc', blk_type, symbol)
   while category is None:
     i += 1
     symbol = code[:2+i]
-    category = get_symbol('dc', blk_type, symbol)
+    category = header.get_symbol('dc', blk_type, symbol)
 
   # get value
   bin_value = code[-category:]
@@ -306,13 +305,13 @@ def huffDec(huffStream, blk_type):
   # ac
   for i in range(1, len(huffStream)):
     code = huffStream[i]
-    i = 0
+    j = 0
     symbol = code[:2]
-    category = get_symbol('ac', blk_type, symbol)
+    category = header.get_symbol('ac', blk_type, symbol)
     while category is None:
-      i += 1
-      symbol = code[:2+i]
-      category = get_symbol('ac', blk_type, symbol)
+      j += 1
+      symbol = code[:2+j]
+      category = header.get_symbol('ac', blk_type, symbol)
 
     prec_zeros, num_bits = category[0], category[1]
 
