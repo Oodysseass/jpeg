@@ -29,6 +29,7 @@ c_table = np.array([[17, 18, 24, 47, 99, 99, 99, 99],
 image = Image.open('baboon.png')
 image = np.array(image)
 subimg = [4,4,4]
+qscale = 0.1
 
 # make dims multiple of 8
 dim_M = image.shape[0] % 8
@@ -63,12 +64,12 @@ for i in range(M_c):
 # quantize
 for i in range(M_y):
   for j in range(N_y):
-    blocks_y[i][j] = fn.quantizeJPEG(blocks_y[i][j], y_table, 0.6)
+    blocks_y[i][j] = fn.quantizeJPEG(blocks_y[i][j], y_table, qscale)
 
 for i in range(M_c):
   for j in range(N_c):
-    blocks_cr[i][j] = fn.quantizeJPEG(blocks_cr[i][j], c_table, 0.6)
-    blocks_cb[i][j] = fn.quantizeJPEG(blocks_cb[i][j], c_table, 0.6)
+    blocks_cr[i][j] = fn.quantizeJPEG(blocks_cr[i][j], c_table, qscale)
+    blocks_cb[i][j] = fn.quantizeJPEG(blocks_cb[i][j], c_table, qscale)
 
 # encode to run symbols
 symbols_y = {i: {} for i in range(M_y)}
@@ -110,7 +111,7 @@ for i in range(M_y):
 
 for i in range(M_c):
   for j in range(N_c):
-    huff_cr[i][j] = fn.huffEnc(symbols_cr[i][j], 'Cr', header,i,j)
+    huff_cr[i][j] = fn.huffEnc(symbols_cr[i][j], 'Cr', header)
     huff_cb[i][j] = fn.huffEnc(symbols_cb[i][j], 'Cb', header)
 
 
@@ -125,7 +126,7 @@ for i in range(M_y):
 
 for i in range(M_c):
   for j in range(N_c):
-    sym_cr[i][j] = fn.huffDec(huff_cr[i][j], 'Cr', header, i, j)
+    sym_cr[i][j] = fn.huffDec(huff_cr[i][j], 'Cr', header)
     sym_cb[i][j] = fn.huffDec(huff_cb[i][j], 'Cb', header)
 
 # decode run symbols
@@ -154,12 +155,12 @@ for i in range(M_c):
 # dequantize
 for i in range(M_y):
   for j in range(N_y):
-    blocks_y[i][j] = fn.dequantizeJPEG(blocks_y[i][j], y_table, 0.6)
+    blocks_y[i][j] = fn.dequantizeJPEG(blocks_y[i][j], y_table, qscale)
 
 for i in range(M_c):
   for j in range(N_c):
-    blocks_cr[i][j] = fn.dequantizeJPEG(blocks_cr[i][j], c_table, 0.6)
-    blocks_cb[i][j] = fn.dequantizeJPEG(blocks_cb[i][j], c_table, 0.6)
+    blocks_cr[i][j] = fn.dequantizeJPEG(blocks_cr[i][j], c_table, qscale)
+    blocks_cb[i][j] = fn.dequantizeJPEG(blocks_cb[i][j], c_table, qscale)
 
 # inverse dct
 image_Y = np.zeros(imageY.shape)
