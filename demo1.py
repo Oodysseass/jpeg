@@ -74,8 +74,8 @@ plt.title('Image 1 original')
 
 plt.suptitle("RGB <-> YCrCb")
 plt.tight_layout()
+plt.savefig('1.png', bbox_inches='tight')
 plt.show()
-plt.savefig('1.png')
 
 plt.subplot(1, 2, 1)
 plt.imshow(image_rgb2)
@@ -87,8 +87,8 @@ plt.title('Image 2 original')
 
 plt.suptitle("RGB <-> YCrCb")
 plt.tight_layout()
+plt.savefig('2.png', bbox_inches='tight')
 plt.show()
-plt.savefig('2.png')
 
 
 ### second part
@@ -215,8 +215,8 @@ plt.title('Image 1 original')
 
 plt.suptitle("Quantization and inverse")
 plt.tight_layout()
+plt.savefig('3.png', bbox_inches='tight')
 plt.show()
-plt.savefig('3.png')
 
 plt.subplot(1, 2, 1)
 plt.imshow(image_rgb2)
@@ -228,5 +228,5 @@ plt.title('Image 2 original')
 
 plt.suptitle("Quantization and inverse")
 plt.tight_layout()
+plt.savefig('4.png', bbox_inches='tight')
 plt.show()
-plt.savefig('4.png')
