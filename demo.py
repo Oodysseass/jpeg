@@ -1,6 +1,7 @@
 from PIL import Image
 import numpy as np
 from matplotlib import pyplot as plt
+from jpeg import JPEGenc
 
 import functions as fn
 
@@ -27,6 +28,7 @@ c_table = np.array([[17, 18, 24, 47, 99, 99, 99, 99],
 ## load image
 image = Image.open('baboon.png')
 image = np.array(image)
+subimg = [4,4,4]
 
 # make dims multiple of 8
 dim_M = image.shape[0] % 8
@@ -38,7 +40,7 @@ if dim_N != 0:
 
 ## jpeg
 # convert to ycrcb
-imageY, imageCr, imageCb = fn.convert2ycrcb(image, [4, 2, 0])
+imageY, imageCr, imageCb = fn.convert2ycrcb(image, subimg)
 
 # convert to dct blocks
 M_y = imageY.shape[0] // 8
@@ -61,12 +63,12 @@ for i in range(M_c):
 # quantize
 for i in range(M_y):
   for j in range(N_y):
-    blocks_y[i][j] = fn.quantizeJPEG(blocks_y[i][j], y_table, 0.5)
+    blocks_y[i][j] = fn.quantizeJPEG(blocks_y[i][j], y_table, 0.6)
 
 for i in range(M_c):
   for j in range(N_c):
-    blocks_cr[i][j] = fn.quantizeJPEG(blocks_cr[i][j], c_table, 0.5)
-    blocks_cb[i][j] = fn.quantizeJPEG(blocks_cb[i][j], c_table, 0.5)
+    blocks_cr[i][j] = fn.quantizeJPEG(blocks_cr[i][j], c_table, 0.6)
+    blocks_cb[i][j] = fn.quantizeJPEG(blocks_cb[i][j], c_table, 0.6)
 
 # encode to run symbols
 symbols_y = {i: {} for i in range(M_y)}
@@ -96,6 +98,7 @@ for i in range(M_c):
     dc_pred = blocks_cb[prev[0]][prev[1]][0, 0]
     symbols_cb[i][j] = fn.runLength(blocks_cb[i][j], dc_pred)
 
+header = JPEGenc()
 # huffman encoding
 # encode to run symbols
 huff_y = {i: {} for i in range(M_y)}
@@ -103,12 +106,12 @@ huff_cr = {i: {} for i in range(M_c)}
 huff_cb = {i: {} for i in range(M_c)}
 for i in range(M_y):
   for j in range(N_y):
-    huff_y[i][j] = fn.huffEnc(symbols_y[i][j], 'lum')
+    huff_y[i][j] = fn.huffEnc(symbols_y[i][j], 'Y', header)
 
 for i in range(M_c):
   for j in range(N_c):
-    huff_cr[i][j] = fn.huffEnc(symbols_cr[i][j], 'chrom')
-    huff_cb[i][j] = fn.huffEnc(symbols_cb[i][j], 'chrom')
+    huff_cr[i][j] = fn.huffEnc(symbols_cr[i][j], 'Cr', header,i,j)
+    huff_cb[i][j] = fn.huffEnc(symbols_cb[i][j], 'Cb', header)
 
 
 ## inverse
@@ -118,45 +121,45 @@ sym_cr = {i: {} for i in range(M_c)}
 sym_cb = {i: {} for i in range(M_c)}
 for i in range(M_y):
   for j in range(N_y):
-    sym_y[i][j] = fn.huffDec(huff_y[i][j], 'lum')
+    sym_y[i][j] = fn.huffDec(huff_y[i][j], 'Y', header)
 
 for i in range(M_c):
   for j in range(N_c):
-    sym_cr[i][j] = fn.huffDec(huff_cr[i][j], 'chrom')
-    sym_cb[i][j] = fn.huffDec(huff_cb[i][j], 'chrom')
+    sym_cr[i][j] = fn.huffDec(huff_cr[i][j], 'Cr', header, i, j)
+    sym_cb[i][j] = fn.huffDec(huff_cb[i][j], 'Cb', header)
 
 # decode run symbols
 blocks_y = {i: {} for i in range(M_y)}
 blocks_cr = {i: {} for i in range(M_c)}
 blocks_cb = {i: {} for i in range(M_c)}
 
-blocks_y[0][0] = fn.irunLength(symbols_y[0][0], 0)
+blocks_y[0][0] = fn.irunLength(sym_y[0][0], 0)
 for i in range(M_y):
   for j in range(N_y):
     if i == 0 and j == 0:
       continue
     prev = [i, j - 1] if j > 0 else [i - 1, imageY.shape[1] // 8 - 1]
-    blocks_y[i][j] = fn.irunLength(symbols_y[i][j], blocks_y[prev[0]][prev[1]][0, 0])
+    blocks_y[i][j] = fn.irunLength(sym_y[i][j], blocks_y[prev[0]][prev[1]][0, 0])
 
-blocks_cr[0][0] = fn.irunLength(symbols_cr[0][0], 0)
-blocks_cb[0][0] = fn.irunLength(symbols_cb[0][0], 0)
+blocks_cr[0][0] = fn.irunLength(sym_cr[0][0], 0)
+blocks_cb[0][0] = fn.irunLength(sym_cb[0][0], 0)
 for i in range(M_c):
   for j in range(N_c):
     if i == 0 and j == 0:
       continue
     prev = [i, j - 1] if j > 0 else [i - 1, imageCr.shape[1] // 8 - 1]
-    blocks_cr[i][j] = fn.irunLength(symbols_cr[i][j], blocks_cr[prev[0]][prev[1]][0, 0])
-    blocks_cb[i][j] = fn.irunLength(symbols_cb[i][j], blocks_cb[prev[0]][prev[1]][0, 0])
+    blocks_cr[i][j] = fn.irunLength(sym_cr[i][j], blocks_cr[prev[0]][prev[1]][0, 0])
+    blocks_cb[i][j] = fn.irunLength(sym_cb[i][j], blocks_cb[prev[0]][prev[1]][0, 0])
 
 # dequantize
 for i in range(M_y):
   for j in range(N_y):
-    blocks_y[i][j] = fn.dequantizeJPEG(blocks_y[i][j], y_table, 0.5)
+    blocks_y[i][j] = fn.dequantizeJPEG(blocks_y[i][j], y_table, 0.6)
 
 for i in range(M_c):
   for j in range(N_c):
-    blocks_cr[i][j] = fn.dequantizeJPEG(blocks_cr[i][j], c_table, 0.5)
-    blocks_cb[i][j] = fn.dequantizeJPEG(blocks_cb[i][j], c_table, 0.5)
+    blocks_cr[i][j] = fn.dequantizeJPEG(blocks_cr[i][j], c_table, 0.6)
+    blocks_cb[i][j] = fn.dequantizeJPEG(blocks_cb[i][j], c_table, 0.6)
 
 # inverse dct
 image_Y = np.zeros(imageY.shape)
@@ -172,7 +175,7 @@ for i in range(imageCr.shape[0] // 8):
     image_Cb[i * 8:(i + 1) * 8, j * 8:(j + 1) * 8] = fn.iBlockDCT(blocks_cb[i][j])
 
 # convert to rgb
-image_rgb = fn.convert2rgb(image_Y, image_Cr, image_Cb, [4, 2, 0])
+image_rgb = fn.convert2rgb(image_Y, image_Cr, image_Cb, subimg)
 
 
 ## display
