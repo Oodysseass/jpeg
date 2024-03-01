@@ -174,10 +174,24 @@ entropy_run2 = [entropy2(run_y2), \
                 entropy2(run_cr2), \
                 entropy2(run_cb2)]
 
-print(entropy_rgb1)
-print(entropy_dct1)
-print(entropy_run1)
-print("-----------------")
-print(entropy_rgb2)
-print(entropy_dct2)
-print(entropy_run2)
+categories = ['R', 'G', 'B', 'DCT_Y', 'DCT_Cr', 'DCT_Cb', 'RL_Y', 'RL_Cr', 'RL_Cb']
+
+entropies = entropy_rgb1 + entropy_dct1 + entropy_run1
+plt.figure(figsize=(10, 6))
+plt.bar(categories, entropies, color='skyblue')
+plt.xlabel('Category')
+plt.ylabel('Entropy')
+plt.title('Entropies of RGB, DCT, and Run Length Symbols')
+plt.xticks(rotation=45)
+plt.savefig('10.png')
+plt.show()
+
+entropies = entropy_rgb2 + entropy_dct2 + entropy_run2
+plt.figure(figsize=(10, 6))
+plt.bar(categories, entropies, color='skyblue')
+plt.xlabel('Category')
+plt.ylabel('Entropy')
+plt.title('Entropies of RGB, DCT, and Run Length Symbols')
+plt.xticks(rotation=45)
+plt.savefig('11.png')
+plt.show()
