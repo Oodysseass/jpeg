@@ -392,6 +392,15 @@ def inverse_twos_complement(bin_str):
       inverted += '0'
   return -(int(inverted, 2) + 1)
 
+def mse(img1, img2):
+  return np.mean(np.square(img1 - img2))
+
+def count_bits(jpeg):
+  sum = 0
+  for i in range(1, len(jpeg)):
+    sum += len(jpeg[i].huffStream)
+  return sum
+
 # changes last (in zig-zag notation) num_hf elements
 # of the quantization tables to value
 def create_table(value, num_hf):

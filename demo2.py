@@ -4,17 +4,7 @@ from matplotlib import pyplot as plt
 from jpeg import JPEGenc
 
 
-from helpers import create_table
-
-
-def mse(img1, img2):
-  return np.mean(np.square(img1 - img2))
-
-def count_bits(jpeg):
-  sum = 0
-  for i in range(1, len(jpeg)):
-    sum += len(jpeg[i].huffStream)
-  return sum
+from helpers import mse, count_bits, create_table
 
 
 image1 = Image.open('baboon.png')
