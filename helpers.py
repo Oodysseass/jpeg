@@ -1,4 +1,5 @@
 import numpy as np
+from math import log, e
 
 dc_lum = {
   0: "00",
@@ -447,3 +448,29 @@ def create_table(value, num_hf):
     j += j_step
 
   return table_l, table_c
+
+def entropy1(labels):
+  n_labels = len(labels)
+  _, counts = np.unique(labels, return_counts=True)
+  probs = counts / n_labels
+  ent = 0.
+  for i in probs:
+    ent -= i * np.log2(i)
+  return ent
+
+
+def entropy2(dictionary):
+    counts = {}
+    for i in range(len(dictionary)):
+      for j in range(len(dictionary[i])):
+        for k in range(len(dictionary[i][j])):
+          a = dictionary[i][j][k][0]
+          b = dictionary[i][j][k][1]
+          counts[(a, b)] = counts.get((a, b), 0) + 1
+
+    total_tuples = sum(counts.values())
+    probabilities = {tup: count / total_tuples for tup, count in counts.items()}
+
+    entropy = -sum(prob * np.log2(prob) for prob in probabilities.values())
+
+    return entropy
