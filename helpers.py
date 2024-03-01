@@ -1,3 +1,6 @@
+import numpy as np
+from math import log, e
+
 dc_lum = {
   0: "00",
   1: "010",
@@ -345,7 +348,7 @@ ac_chrom = {
   (14, 8): "1111111111110010",
   (14, 9): "1111111111110011",
   (14, 10): "1111111111110100",
-  (15, 0): "111111110111",
+  (15, 0): "1111111010",
   (15, 1): "111111111000011",
   (15, 2): "1111111111110101",
   (15, 3): "1111111111110110",
@@ -358,122 +361,28 @@ ac_chrom = {
   (15, 10): "1111111111111101"
 }
 
-def get_huffman(ac_dc, lum_chrom, cat):
-  if ac_dc == 'ac':
-    if lum_chrom == 'lum':
-      return get_huffman_ac_lum(cat)
-    else:
-      return get_huffman_ac_chrom(cat)
-  else:
-    if lum_chrom == 'lum':
-      return get_huffman_dc_lum(cat)
-    else:
-      return get_huffman_dc_chrom(cat)
+# default tables for quantization
+default_l = np.array([[16, 11, 10, 16, 24, 40, 51, 61],
+                      [12, 12, 14, 19, 26, 58, 60, 55],
+                      [14, 13, 16, 24, 40, 57, 69, 56],
+                      [14, 17, 22, 29, 51, 87, 80, 62],
+                      [18, 22, 37, 56, 68, 109, 103, 77],
+                      [24, 35, 55, 64, 81, 104, 113, 92],
+                      [49, 64, 78, 87, 103, 121, 120, 101],
+                      [72, 92, 95, 98, 112, 100, 103, 99]])
 
-def get_symbol(ac_dc, lum_chrom, code):
-  if ac_dc == 'ac':
-    if lum_chrom == 'lum':
-      return get_run_ac_lum(code)
-    else:
-      return get_run_ac_chrom(code)
-  else:
-    if lum_chrom == 'lum':
-      return get_run_dc_lum(code)
-    else:
-      return get_run_dc_chrom(code)
+default_c = np.array([[17, 18, 24, 47, 99, 99, 99, 99],
+                      [18, 21, 26, 66, 99, 99, 99, 99],
+                      [24, 26, 56, 99, 99, 99, 99, 99],
+                      [47, 66, 99, 99, 99, 99, 99, 99],
+                      [99, 99, 99, 99, 99, 99, 99, 99],
+                      [99, 99, 99, 99, 99, 99, 99, 99],
+                      [99, 99, 99, 99, 99, 99, 99, 99],
+                      [99, 99, 99, 99, 99, 99, 99, 99]])
 
-def get_category_dc(dc):
-  if dc == 0:
-      return 0
-  elif abs(dc) <= 1:
-      return 1
-  elif abs(dc) <= 3:
-      return 2
-  elif abs(dc) <= 7:
-      return 3
-  elif abs(dc) <= 15:
-      return 4
-  elif abs(dc) <= 31:
-      return 5
-  elif abs(dc) <= 63:
-      return 6
-  elif abs(dc) <= 127:
-      return 7
-  elif abs(dc) <= 255:
-      return 8
-  elif abs(dc) <= 511:
-      return 9
-  elif abs(dc) <= 1023:
-      return 10
-  elif abs(dc) <= 2047:
-      return 11
-  else:
-      print("No category for this difference")
-
-def get_category_ac(ac):
-  if ac == 0:
-      return 0
-  elif abs(ac) <= 1:
-      return 1
-  elif abs(ac) <= 3:
-      return 2
-  elif abs(ac) <= 7:
-      return 3
-  elif abs(ac) <= 15:
-      return 4
-  elif abs(ac) <= 31:
-      return 5
-  elif abs(ac) <= 63:
-      return 6
-  elif abs(ac) <= 127:
-      return 7
-  elif abs(ac) <= 255:
-      return 8
-  elif abs(ac) <= 511:
-      return 9
-  elif abs(ac) <= 1023:
-      return 10
-  else:
-      print("No category for this difference")
-
-def get_huffman_dc_lum(cat):
-  return dc_lum[cat]
-
-def get_huffman_dc_chrom(cat):
-  return dc_chrom[cat]
-
-def get_huffman_ac_lum(cat):
-  return ac_lum[cat]
-
-def get_huffman_ac_chrom(cat):
-  return ac_chrom[cat]
-
-def get_run_dc_lum(code):
-  for key, value in dc_lum.items():
-    if value == code:
-      return key
-  return None
-
-def get_run_dc_chrom(code):
-  for key, value in dc_chrom.items():
-    if value == code:
-      return key
-  return None
-
-def get_run_ac_lum(code):
-  for key, value in ac_lum.items():
-    if value == code:
-      return key
-  return None
-
-def get_run_ac_chrom(code):
-  for key, value in ac_chrom.items():
-    if value == code:
-      return key
-  return None
-
-def twos_complement(num):
-  return format(2 ** 8 + num, f'08b')
+def twos_complement(num, num_bits):
+  shift = 2 ** num_bits + num
+  return bin(shift)
 
 def inverse_twos_complement(bin_str):
   inverted = ''
@@ -483,3 +392,85 @@ def inverse_twos_complement(bin_str):
     else:
       inverted += '0'
   return -(int(inverted, 2) + 1)
+
+def mse(img1, img2):
+  return np.mean(np.square(img1 - img2))
+
+def count_bits(jpeg):
+  sum = 0
+  for i in range(1, len(jpeg)):
+    sum += len(jpeg[i].huffStream)
+  return sum
+
+# changes last (in zig-zag notation) num_hf elements
+# of the quantization tables to value
+def create_table(value, num_hf):
+  table_l = np.copy(default_l)
+  table_c = np.copy(default_c)
+
+  i, j = 0, 1
+  i_step, j_step = 1, -1
+  count = 63 - num_hf
+  direction = True
+  while i < 8 and j < 8:
+    if count <= 0:
+      table_l[i, j] = value
+      table_c[i, j] = value
+    count -= 1
+
+    if direction:
+      if i == 0 and i_step == -1:
+        i_step = 1
+        j_step = -1
+        j += 1
+        continue
+      elif j == 0 and j_step == -1:
+        i_step = -1
+        j_step = 1
+        if i < 7:
+          i += 1
+        else:
+          j += 1
+          direction = False
+        continue
+    else:
+      if i == 7 and i_step == 1:
+        i_step = -1
+        j_step = 1
+        j += 1
+        continue
+      elif j == 7 and j_step == 1:
+        i_step = 1
+        j_step = -1
+        i += 1
+        continue
+    i += i_step
+    j += j_step
+
+  return table_l, table_c
+
+def entropy1(labels):
+  n_labels = len(labels)
+  _, counts = np.unique(labels, return_counts=True)
+  probs = counts / n_labels
+  ent = 0.
+  for i in probs:
+    ent -= i * np.log2(i)
+  return ent
+
+
+def entropy2(dictionary):
+    counts = {}
+    for i in range(len(dictionary)):
+      for j in range(len(dictionary[i])):
+        for k in range(len(dictionary[i][j])):
+          a = dictionary[i][j][k][0]
+          b = dictionary[i][j][k][1]
+          counts[(a, b)] = counts.get((a, b), 0) + 1
+
+    total_tuples = sum(counts.values())
+    probabilities = {tup: count / total_tuples for tup, count in counts.items()}
+
+    entropy = -sum(prob * np.log2(prob) for prob in probabilities.values())
+
+    return entropy
