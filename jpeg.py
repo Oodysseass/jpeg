@@ -89,8 +89,8 @@ class JPEGenc:
         return self.get_run_dc_chrom(code)
 
   @staticmethod
-  def JPEGencode(img, subimg, qScale):
-    header = JPEGenc(qScale=qScale)
+  def JPEGencode(img, subimg, qScale, qTableL=default_l, qTableC=default_l):
+    header = JPEGenc(qScale=qScale, qTableL=qTableL, qTableC=qTableC)
 
     # make dims multiple of 8
     dim_M = img.shape[0] % 8
