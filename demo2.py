@@ -4,6 +4,9 @@ from matplotlib import pyplot as plt
 from jpeg import JPEGenc
 
 
+from helpers import create_table
+
+
 def mse(img1, img2):
   return np.mean(np.square(img1 - img2))
 
@@ -72,4 +75,25 @@ plt.plot(q, bits)
 plt.title('# bits over qScale')
 plt.tight_layout()
 plt.savefig('8.png')
+plt.show()
+
+
+plt.figure(figsize=(20, 15))
+high_freq = [20, 40, 50, 60, 63]
+for i in range(len(high_freq)):
+  q_table_l, q_table_c = create_table(9999999, high_freq[i])
+
+  jpeg = JPEGenc.JPEGencode(image1, [4, 4, 4], 1, q_table_l, q_table_c)
+  img = JPEGenc.JPEGdecode(jpeg)
+  plt.subplot(2, 5, i+1)
+  plt.imshow(img)
+  plt.title(f'# high order acs={high_freq[i]}')
+
+  jpeg = JPEGenc.JPEGencode(image2, [4, 4, 4], 1, q_table_l, q_table_c)
+  img = JPEGenc.JPEGdecode(jpeg)
+  plt.subplot(2, 5, i+6)
+  plt.imshow(img)
+
+plt.tight_layout()
+plt.savefig('9.png')
 plt.show()
