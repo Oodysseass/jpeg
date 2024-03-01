@@ -391,3 +391,50 @@ def inverse_twos_complement(bin_str):
     else:
       inverted += '0'
   return -(int(inverted, 2) + 1)
+
+# changes last (in zig-zag notation) num_hf elements
+# of the quantization tables to value
+def create_table(value, num_hf):
+  table_l = np.copy(default_l)
+  table_c = np.copy(default_c)
+
+  i, j = 0, 1
+  i_step, j_step = 1, -1
+  count = 63 - num_hf
+  direction = True
+  while i < 8 and j < 8:
+    if count <= 0:
+      table_l[i, j] = value
+      table_c[i, j] = value
+    count -= 1
+
+    if direction:
+      if i == 0 and i_step == -1:
+        i_step = 1
+        j_step = -1
+        j += 1
+        continue
+      elif j == 0 and j_step == -1:
+        i_step = -1
+        j_step = 1
+        if i < 7:
+          i += 1
+        else:
+          j += 1
+          direction = False
+        continue
+    else:
+      if i == 7 and i_step == 1:
+        i_step = -1
+        j_step = 1
+        j += 1
+        continue
+      elif j == 7 and j_step == 1:
+        i_step = 1
+        j_step = -1
+        i += 1
+        continue
+    i += i_step
+    j += j_step
+
+  return table_l, table_c
